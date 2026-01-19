@@ -5,29 +5,29 @@ Reviewing marketing campaign performance
 
 import pandas as pd
 
-print("Starting campaign analysis...")
+print("Starting basic campaign analysis...")
 print("=" * 40)
 
-# Load the campaign data
+# Loading the campaign data from the kaggle csv file
 print("Loading campaign data from CSV...")
 campaign_data = pd.read_csv('data/bank_clean.csv', sep=';')
 
-# ========== SQL DATABASE SETUP ==========
+# ========== sql database integration with SQLiteP ==========
 print("\n" + "=" * 40)
 print("SQL DATABASE INTEGRATION")
-print("=" * 40)
+
 
 import sqlite3
 
 print("Creating SQL database for analysis...")
 conn = sqlite3.connect('data/campaigns.db')
 
-# Load CSV into SQL
+# Load CSV into SQLite
 campaign_data.to_sql('campaign_results', conn, if_exists='replace', index=False)
-print(f"• Database created: data/campaigns.db")
+print(f"• Database created successfully: data/campaigns.db")
 print(f"• Table loaded: {len(campaign_data):,} records")
 
-# Example SQL query
+# Example basic SQL query
 print("\nRunning SQL query for channel analysis:")
 channel_query = """
 SELECT 
@@ -40,7 +40,7 @@ GROUP BY contact
 ORDER BY success_rate DESC;
 """
 
-# Execute SQL and get results
+# Execute SQL and get results 
 channel_results_sql = pd.read_sql_query(channel_query, conn)
 print(channel_results_sql.to_string(index=False))
 
@@ -48,39 +48,40 @@ conn.close()
 print("\n✓ SQL analysis complete")
 print("=" * 40)
 
-print(f"Total records loaded: {len(campaign_data):,}")
+print(f"Total records successfulu loaded: {len(campaign_data):,}")
 print(f"Data period: {campaign_data['month'].unique()}")
 
-# Calculate campaign success rate
+# Calculate campaign success rate using the SQL data extraction
 print("\nCampaign success analysis:")
 successful = (campaign_data['deposit'] == 'yes').sum()
 total = len(campaign_data)
 success_rate = (successful / total) * 100
 
-print(f"   • Successful campaigns: {successful:,}")
-print(f"   • Total campaigns: {total:,}")
-print(f"   • Success rate: {success_rate:.1f}%")
+print(f"   • Successful analysed campaigns: {successful:,}")
+print(f"   • Total analysed campaigns: {total:,}")
+print(f"   • Overall Success rate: {success_rate:.1f}%")
 
-# Analyze performance by contact channel
+# Analyze performance by contact channel individually
 print("\nChannel performance comparison:")
 
-# Group data by contact method
+# here is the grouping data by contact method
+# here using the lambda method to represent the anonymous function
 channel_results = campaign_data.groupby('contact').agg(
     attempts=('deposit', 'count'),
     successes=('deposit', lambda x: (x == 'yes').sum())
 )
 
-# Calculate success rates
+# Calculate success rates individually
 channel_results['success_rate'] = (channel_results['successes'] / channel_results['attempts'] * 100).round(1)
 
-# Display results
+# displaying general results
 for channel in ['cellular', 'telephone', 'unknown']:
     if channel in channel_results.index:
         stats = channel_results.loc[channel]
         print(f"   • {channel}: {stats['success_rate']}% success rate")
         print(f"     ({stats['successes']} successes out of {stats['attempts']} attempts)")
 
-# Identify best and worst performing channels
+# identifiying the best and the worst performing channels (aproximation)
 print("\nKey business insight:")
 best_channel = channel_results['success_rate'].idxmax()
 best_rate = channel_results['success_rate'].max()
@@ -91,21 +92,20 @@ print(f"   • Best channel: {best_channel} ({best_rate}% success)")
 print(f"   • Worst channel: {worst_channel} ({worst_rate}% success)")
 print(f"   • Performance gap: {best_rate - worst_rate:.1f} percentage points")
 
-# Simple recommendation
+#  recommendation based on the first results focused on Celular
 print(f"\nRecommendation:")
 print(f"   Consider reallocating some budget from {worst_channel}")
 print(f"   to {best_channel} for better campaign results.")
 
 # ========== CUSTOMER SEGMENTATION ==========
-print("\n" + "=" * 40)
 print("CUSTOMER VALUE SEGMENTATION")
 print("=" * 40)
 
-# Create 3 customer segments based on balance
+# create 3 cust segments based on the final balance 
 campaign_data['customer_tier'] = pd.qcut(campaign_data['balance'], q=3, 
                                         labels=['Standard', 'Premium', 'Elite'])
 
-# Analyze each tier
+# analysing each tier and comparing the sdeposit rate
 print("\nCustomer segmentation by account balance:")
 for tier in ['Standard', 'Premium', 'Elite']:
     tier_data = campaign_data[campaign_data['customer_tier'] == tier]
@@ -122,12 +122,12 @@ print("\nSegmentation finding:")
 print("Customer response varies by financial profile")
 print("Suggests personalized campaign approaches")
 
-# ========== BUSINESS KPIs & ROI ==========
-print("\n" + "=" * 40)
+#Business KPIs and return of investment (ROI)
+
 print("BUSINESS IMPACT & ROI ESTIMATION")
 print("=" * 40)
 
-# Assume average values for business calculation
+# assume average values for business calculation using tthe banks metrics
 avg_deposit_amount = 1000  # Example: average deposit amount in €
 contact_cost = {
     'cellular': 2.50,   # Cost per cellular contact
@@ -143,7 +143,7 @@ for channel in ['cellular', 'telephone', 'unknown']:
     conversions = (channel_data['deposit'] == 'yes').sum()
     success_rate = (conversions / contacts * 100)
     
-    # Calculate revenue and cost
+    # Calculate revenue and cost aproximation
     revenue = conversions * avg_deposit_amount
     cost = contacts * contact_cost[channel]
     profit = revenue - cost
@@ -158,7 +158,7 @@ for channel in ['cellular', 'telephone', 'unknown']:
     print(f"   • Profit: €{profit:,.0f}")
     print(f"   • ROI: {roi:.1f}%")
 
-# Find best ROI channel
+# here is the best ROI channel
 best_roi_channel = max(['cellular', 'telephone', 'unknown'], 
                       key=lambda x: ((campaign_data[campaign_data['contact'] == x]['deposit'] == 'yes').sum() * avg_deposit_amount - 
                                      len(campaign_data[campaign_data['contact'] == x]) * contact_cost[x]) / 
@@ -169,7 +169,7 @@ print(f"   • Highest ROI channel: {best_roi_channel}")
 print(f"   • Recommendation: Prioritize {best_roi_channel} in budget allocation")
 print(f"   • Expected impact: Improve overall campaign profitability")
 
-# Add ROI-focused insight
+# ROI focused on the insights (celular makes most sense to boost)
 print("\nBUSINESS IMPACT ANALYSIS:")
 cellular_cost = 0.10  # example cost per contact
 cellular_revenue = 100  # example revenue per conversion
